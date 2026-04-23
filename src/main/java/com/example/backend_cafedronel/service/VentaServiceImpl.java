@@ -8,11 +8,15 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class VentaServiceImpl implements VentaService {
+
+    private static final ZoneId LIMA_ZONE = ZoneId.of("America/Lima");
 
     private final ProductoService productoService;
     private final List<Venta> ventas = new ArrayList<>();
@@ -33,13 +37,24 @@ public class VentaServiceImpl implements VentaService {
         v1.setId(nextId++);
         v1.setUsuarioId(1);
         v1.setCantidad(2);
-        v1.setProducto(p1);
+        v1.setProducto(copiaProductoParaDocumento(p1));
         v1.setPrecioUnitario(p1.getPrecio());
         v1.setTotal(v1.getCantidad() * p1.getPrecio());
         v1.setEstado("completado");
         v1.setMetodoPago("efectivo");
         v1.setFechaVenta(ahora);
         ventas.add(v1);
+    }
+
+    private static Producto copiaProductoParaDocumento(Producto origen) {
+        Producto copia = new Producto();
+        copia.setId(origen.getId());
+        copia.setNombre(origen.getNombre());
+        copia.setPrecio(origen.getPrecio());
+        copia.setCategoria(origen.getCategoria());
+        copia.setDescripcion(origen.getDescripcion());
+        copia.setFechaCreacion(Timestamp.from(ZonedDateTime.now(LIMA_ZONE).toInstant()));
+        return copia;
     }
 
     @Override
@@ -60,7 +75,7 @@ public class VentaServiceImpl implements VentaService {
         Producto producto = productoService.obtenerPorId(venta.getProducto().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Producto", venta.getProducto().getId()));
 
-        venta.setProducto(producto);
+        venta.setProducto(copiaProductoParaDocumento(producto));
         venta.setPrecioUnitario(producto.getPrecio());
         venta.setTotal(venta.getCantidad() * producto.getPrecio());
 
@@ -82,7 +97,7 @@ public class VentaServiceImpl implements VentaService {
 
         venta.setUsuarioId(ventaActualizada.getUsuarioId());
         venta.setCantidad(ventaActualizada.getCantidad());
-        venta.setProducto(producto);
+        venta.setProducto(copiaProductoParaDocumento(producto));
         venta.setMetodoPago(ventaActualizada.getMetodoPago());
         venta.setEstado(ventaActualizada.getEstado());
 
