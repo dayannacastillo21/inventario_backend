@@ -6,12 +6,14 @@ import com.example.backend_cafedronel.model.Inventario;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class InventarioServiceImpl implements InventarioService {
 
+    private static final ZoneId LIMA_ZONE = ZoneId.of("America/Lima");
     private final List<Inventario> inventario = new ArrayList<>();
     private int nextId = 1;
 
@@ -24,7 +26,7 @@ public class InventarioServiceImpl implements InventarioService {
         i1.setStockMinimo(10);
         i1.setPrecioUnitario(25.0f);
         i1.setProveedor("Distribuidora Café Peru");
-        i1.setFechaActualizacion(LocalDateTime.now());
+        i1.setFechaActualizacion(LocalDateTime.now(LIMA_ZONE));
         inventario.add(i1);
 
         Inventario i2 = new Inventario();
@@ -35,7 +37,7 @@ public class InventarioServiceImpl implements InventarioService {
         i2.setStockMinimo(5);
         i2.setPrecioUnitario(4.5f);
         i2.setProveedor("Lácteos del Norte");
-        i2.setFechaActualizacion(LocalDateTime.now());
+        i2.setFechaActualizacion(LocalDateTime.now(LIMA_ZONE));
         inventario.add(i2);
     }
 
@@ -47,7 +49,7 @@ public class InventarioServiceImpl implements InventarioService {
     @Override
     public Inventario crear(Inventario item) {
         item.setId(nextId++);
-        item.setFechaActualizacion(LocalDateTime.now());
+        item.setFechaActualizacion(LocalDateTime.now(LIMA_ZONE));
         inventario.add(item);
         return item;
     }
@@ -62,7 +64,7 @@ public class InventarioServiceImpl implements InventarioService {
                 item.setStockMinimo(actualizado.getStockMinimo());
                 item.setPrecioUnitario(actualizado.getPrecioUnitario());
                 item.setProveedor(actualizado.getProveedor());
-                item.setFechaActualizacion(LocalDateTime.now());
+                item.setFechaActualizacion(LocalDateTime.now(LIMA_ZONE));
                 return item;
             }
         }
@@ -85,7 +87,7 @@ public class InventarioServiceImpl implements InventarioService {
         for (Inventario item : inventario) {
             if (item.getId().equals(id)) {
                 item.setCantidad(Math.max(item.getCantidad() - unidades, 0));
-                item.setFechaActualizacion(LocalDateTime.now());
+                item.setFechaActualizacion(LocalDateTime.now(LIMA_ZONE));
                 return item;
             }
         }

@@ -2,6 +2,7 @@ package com.example.backend_cafedronel.model;
 
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Inventario {
     private Integer id;
@@ -12,7 +13,8 @@ public class Inventario {
     private Float precioUnitario;
     private String proveedor;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonProperty("fechaActualizacion")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "America/Lima")
     private LocalDateTime fechaActualizacion;
 
     public Integer getId() { return id; }
