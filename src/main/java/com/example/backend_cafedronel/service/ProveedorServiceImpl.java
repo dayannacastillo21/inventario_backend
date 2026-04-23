@@ -1,8 +1,11 @@
 package com.example.backend_cafedronel.service;
 
-import org.springframework.stereotype.Service;
-import java.util.*;
+import com.example.backend_cafedronel.exception.ResourceNotFoundException;
 import com.example.backend_cafedronel.model.Proveedor;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class ProveedorServiceImpl implements ProveedorService {
@@ -40,12 +43,13 @@ public class ProveedorServiceImpl implements ProveedorService {
                 return p;
             }
         }
-        throw new RuntimeException("Proveedor no encontrado");
+        throw new ResourceNotFoundException("Proveedor", id);
     }
 
     @Override
     public void eliminar(Integer id) {
-        if (proveedores.removeIf(p -> p.getId().equals(id)) == false)
-            throw new RuntimeException("Proveedor no encontrado");
+        if (!proveedores.removeIf(p -> p.getId().equals(id))) {
+            throw new ResourceNotFoundException("Proveedor", id);
+        }
     }
 }

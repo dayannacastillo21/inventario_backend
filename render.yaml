@@ -1,0 +1,9 @@
+# Blueprint de Render: New Blueprint → conecta el repo y aplica este archivo
+# Documentación: https://render.com/docs/yaml-spec
+services:
+  - type: web
+    name: backend-cafedronel
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/estado

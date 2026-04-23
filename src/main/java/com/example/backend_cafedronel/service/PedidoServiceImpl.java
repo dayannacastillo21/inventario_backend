@@ -1,65 +1,38 @@
 package com.example.backend_cafedronel.service;
 
-import org.springframework.stereotype.Service;
-import java.sql.Timestamp;
+import com.example.backend_cafedronel.exception.BusinessException;
+import com.example.backend_cafedronel.exception.ResourceNotFoundException;
+import com.example.backend_cafedronel.model.DetallePedido;
 import com.example.backend_cafedronel.model.Pedido;
 import com.example.backend_cafedronel.model.Producto;
-import java.util.Optional;
-import java.util.List;
+import jakarta.annotation.PostConstruct;
+import org.springframework.stereotype.Service;
+
+import java.sql.Timestamp;
 import java.util.ArrayList;
-import com.example.backend_cafedronel.model.DetallePedido;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class PedidoServiceImpl implements PedidoService {
 
-    private List<Pedido> pedidos = new ArrayList<>();
-    private List<Producto> productos = new ArrayList<>();
-
+    private final ProductoService productoService;
+    private final List<Pedido> pedidos = new ArrayList<>();
     private int nextId = 1;
     private int nextDetalleId = 1;
 
-    @Override
-    public List<Pedido> listar() {
-        return new ArrayList<>(pedidos);
+    public PedidoServiceImpl(ProductoService productoService) {
+        this.productoService = productoService;
     }
 
-    @Override
-    public Optional<Pedido> obtenerPorId(Integer id) {
-        return pedidos.stream().filter(p -> p.getId().equals(id)).findFirst();
-    }
-
-    public PedidoServiceImpl() {
-
+    @PostConstruct
+    void seedDemoPedido() {
+        Producto p1 = productoService.obtenerPorId(1).orElse(null);
+        Producto p2 = productoService.obtenerPorId(2).orElse(null);
+        if (p1 == null || p2 == null) {
+            return;
+        }
         Timestamp ahora = new Timestamp(System.currentTimeMillis());
-
-        Producto p1 = new Producto();
-        p1.setId(1);
-        p1.setNombre("Café Americano");
-        p1.setPrecio(8.0);
-        p1.setCategoria("bebidas");
-        p1.setDescripcion("Café negro clásico");
-        p1.setFechaCreacion(ahora);
-
-        Producto p2 = new Producto();
-        p2.setId(2);
-        p2.setNombre("Cappuccino");
-        p2.setPrecio(12.0);
-        p2.setCategoria("bebidas");
-        p2.setDescripcion("Café con leche espumada");
-        p2.setFechaCreacion(ahora);
-
-        Producto p3 = new Producto();
-        p3.setId(3);
-        p3.setNombre("Croissant");
-        p3.setPrecio(6.5);
-        p3.setCategoria("comida");
-        p3.setDescripcion("Croissant de mantequilla");
-        p3.setFechaCreacion(ahora);
-
-        productos.add(p1);
-        productos.add(p2);
-        productos.add(p3);
-
         Pedido pedido = new Pedido();
         pedido.setId(nextId++);
         pedido.setCliente("Demo");
@@ -85,25 +58,30 @@ public class PedidoServiceImpl implements PedidoService {
         List<DetallePedido> detalles = new ArrayList<>();
         detalles.add(d1);
         detalles.add(d2);
-
         pedido.setDetalles(detalles);
         pedido.setTotal(d1.getSubtotal() + d2.getSubtotal());
-
         pedidos.add(pedido);
     }
 
-    private Producto buscarProducto(Integer id) {
-        return productos.stream()
-                .filter(p -> p.getId().equals(id))
-                .findFirst()
-                .orElse(null);
+    @Override
+    public List<Pedido> listar() {
+        return new ArrayList<>(pedidos);
+    }
+
+    @Override
+    public Optional<Pedido> obtenerPorId(Integer id) {
+        return pedidos.stream().filter(p -> p.getId().equals(id)).findFirst();
+    }
+
+    private Producto resolverProducto(Integer id) {
+        return productoService.obtenerPorId(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Producto", id));
     }
 
     @Override
     public Pedido crear(Pedido pedido) {
-
         if (pedido.getDetalles() == null || pedido.getDetalles().isEmpty()) {
-            throw new RuntimeException("El pedido no tiene detalles");
+            throw new BusinessException("El pedido debe incluir al menos un detalle");
         }
 
         pedido.setId(nextId++);
@@ -111,95 +89,81 @@ public class PedidoServiceImpl implements PedidoService {
         pedido.setFecha(new Timestamp(System.currentTimeMillis()));
 
         double total = 0;
-
         for (DetallePedido d : pedido.getDetalles()) {
             d.setId(nextDetalleId++);
             d.setPedidoId(pedido.getId());
 
-            Producto producto = buscarProducto(d.getProducto().getId());
-
-            if (producto == null) {
-                throw new RuntimeException("Producto no existe");
+            if (d.getProducto() == null || d.getProducto().getId() == null) {
+                throw new BusinessException("Cada detalle debe referenciar un producto por id");
             }
-
+            Producto producto = resolverProducto(d.getProducto().getId());
             d.setProducto(producto);
             d.setPrecio(producto.getPrecio());
-
             double subtotal = d.getCantidad() * producto.getPrecio();
             d.setSubtotal(subtotal);
-
             total += subtotal;
         }
-
         pedido.setTotal(total);
-
         pedidos.add(pedido);
         return pedido;
     }
 
     @Override
     public Pedido actualizar(Integer id, Pedido pedidoActualizado) {
-
         Pedido pedido = pedidos.stream()
                 .filter(p -> p.getId().equals(id))
                 .findFirst()
-                .orElse(null);
-
-        if (pedido == null) return null;
+                .orElseThrow(() -> new ResourceNotFoundException("Pedido", id));
 
         pedido.setCliente(pedidoActualizado.getCliente());
         pedido.setDetalles(pedidoActualizado.getDetalles());
 
-        double total = 0;
+        if (pedido.getDetalles() == null || pedido.getDetalles().isEmpty()) {
+            throw new BusinessException("El pedido debe incluir al menos un detalle");
+        }
 
+        double total = 0;
         for (DetallePedido d : pedido.getDetalles()) {
             d.setId(nextDetalleId++);
             d.setPedidoId(pedido.getId());
-
-            Producto producto = buscarProducto(d.getProducto().getId());
-
-            if (producto == null) {
-                throw new RuntimeException("Producto no existe");
+            if (d.getProducto() == null || d.getProducto().getId() == null) {
+                throw new BusinessException("Cada detalle debe referenciar un producto por id");
             }
-
+            Producto producto = resolverProducto(d.getProducto().getId());
             d.setProducto(producto);
             d.setPrecio(producto.getPrecio());
-
             double subtotal = d.getCantidad() * producto.getPrecio();
             d.setSubtotal(subtotal);
-
             total += subtotal;
         }
-
         pedido.setTotal(total);
-
         return pedido;
     }
 
     @Override
     public Pedido actualizarEstado(Integer id, String estado) {
-        Pedido pedido = pedidos.stream().filter(p -> p.getId().equals(id)).findFirst()
-                .orElseThrow(() -> new RuntimeException("Pedido no encontrado"));
+        Pedido pedido = pedidos.stream()
+                .filter(p -> p.getId().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Pedido", id));
 
-        switch (estado.toLowerCase()) {
-            case "en_proceso":
-                pedido.setEstado(Pedido.EstadoPedido.en_proceso);
-                break;
-            case "completado":
-                pedido.setEstado(Pedido.EstadoPedido.completado);
-                break;
-            case "cancelado":
-                pedido.setEstado(Pedido.EstadoPedido.cancelado);
-                break;
-            default:
-                throw new RuntimeException("Estado no válido");
+        if (estado == null) {
+            throw new BusinessException("El estado es obligatorio");
         }
-
+        switch (estado.toLowerCase()) {
+            case "en_proceso" -> pedido.setEstado(Pedido.EstadoPedido.en_proceso);
+            case "completado" -> pedido.setEstado(Pedido.EstadoPedido.completado);
+            case "cancelado" -> pedido.setEstado(Pedido.EstadoPedido.cancelado);
+            default -> throw new BusinessException("Estado no válido: " + estado);
+        }
         return pedido;
     }
 
     @Override
     public void eliminar(Integer id) {
-        pedidos.removeIf(p -> p.getId().equals(id));
+        boolean removed = pedidos.removeIf(p -> p.getId().equals(id));
+        if (!removed) {
+            throw new ResourceNotFoundException("Pedido", id);
+        }
     }
 }
