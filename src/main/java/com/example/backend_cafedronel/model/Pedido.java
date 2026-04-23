@@ -1,8 +1,6 @@
 package com.example.backend_cafedronel.model;
 
 import java.util.List;
-import java.sql.Timestamp;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonPropertyOrder({
@@ -10,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     "cliente",
     "estado",
     "total",
-    "fecha",
     "detalles"
 })
 public class Pedido {
@@ -18,9 +15,6 @@ public class Pedido {
     private String cliente;
     private Double total;
     private EstadoPedido estado;
-
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "America/Lima")
-    private Timestamp fecha;
 
     private List<DetallePedido> detalles;
 
@@ -39,9 +33,6 @@ public class Pedido {
 
     public EstadoPedido getEstado() { return estado; }
     public void setEstado(EstadoPedido estado) { this.estado = estado; }
-
-    public Timestamp getFecha() { return fecha; }
-    public void setFecha(Timestamp fecha) { this.fecha = fecha; }
 
     public List<DetallePedido> getDetalles() { return detalles; }
     public void setDetalles(List<DetallePedido> detalles) { this.detalles = detalles; }

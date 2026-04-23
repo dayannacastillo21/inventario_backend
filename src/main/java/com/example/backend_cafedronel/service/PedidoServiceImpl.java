@@ -8,7 +8,6 @@ import com.example.backend_cafedronel.model.Producto;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -32,12 +31,10 @@ public class PedidoServiceImpl implements PedidoService {
         if (p1 == null || p2 == null) {
             return;
         }
-        Timestamp ahora = new Timestamp(System.currentTimeMillis());
         Pedido pedido = new Pedido();
         pedido.setId(nextId++);
         pedido.setCliente("Demo");
         pedido.setEstado(Pedido.EstadoPedido.pendiente);
-        pedido.setFecha(ahora);
 
         DetallePedido d1 = new DetallePedido();
         d1.setId(nextDetalleId++);
@@ -86,7 +83,6 @@ public class PedidoServiceImpl implements PedidoService {
 
         pedido.setId(nextId++);
         pedido.setEstado(Pedido.EstadoPedido.pendiente);
-        pedido.setFecha(new Timestamp(System.currentTimeMillis()));
 
         double total = 0;
         for (DetallePedido d : pedido.getDetalles()) {
