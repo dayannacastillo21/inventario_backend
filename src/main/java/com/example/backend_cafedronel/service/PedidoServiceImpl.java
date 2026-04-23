@@ -8,12 +8,17 @@ import com.example.backend_cafedronel.model.Producto;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
+import java.sql.Timestamp;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class PedidoServiceImpl implements PedidoService {
+
+    private static final ZoneId LIMA_ZONE = ZoneId.of("America/Lima");
 
     private final ProductoService productoService;
     private final List<Pedido> pedidos = new ArrayList<>();
@@ -40,7 +45,7 @@ public class PedidoServiceImpl implements PedidoService {
         d1.setId(nextDetalleId++);
         d1.setCantidad(2);
         d1.setPedidoId(pedido.getId());
-        d1.setProducto(p1);
+        d1.setProducto(copiaProductoParaDocumento(p1));
         d1.setPrecio(p1.getPrecio());
         d1.setSubtotal(2 * p1.getPrecio());
 
@@ -48,7 +53,7 @@ public class PedidoServiceImpl implements PedidoService {
         d2.setId(nextDetalleId++);
         d2.setCantidad(1);
         d2.setPedidoId(pedido.getId());
-        d2.setProducto(p2);
+        d2.setProducto(copiaProductoParaDocumento(p2));
         d2.setPrecio(p2.getPrecio());
         d2.setSubtotal(1 * p2.getPrecio());
 
@@ -75,6 +80,21 @@ public class PedidoServiceImpl implements PedidoService {
                 .orElseThrow(() -> new ResourceNotFoundException("Producto", id));
     }
 
+    /**
+     * Copia datos del catálogo para el documento (pedido) sin mutar el producto en memoria.
+     * La fechaCreacion refleja el momento en que se arma la línea del pedido.
+     */
+    private static Producto copiaProductoParaDocumento(Producto origen) {
+        Producto copia = new Producto();
+        copia.setId(origen.getId());
+        copia.setNombre(origen.getNombre());
+        copia.setPrecio(origen.getPrecio());
+        copia.setCategoria(origen.getCategoria());
+        copia.setDescripcion(origen.getDescripcion());
+        copia.setFechaCreacion(Timestamp.from(ZonedDateTime.now(LIMA_ZONE).toInstant()));
+        return copia;
+    }
+
     @Override
     public Pedido crear(Pedido pedido) {
         if (pedido.getDetalles() == null || pedido.getDetalles().isEmpty()) {
@@ -93,7 +113,7 @@ public class PedidoServiceImpl implements PedidoService {
                 throw new BusinessException("Cada detalle debe referenciar un producto por id");
             }
             Producto producto = resolverProducto(d.getProducto().getId());
-            d.setProducto(producto);
+            d.setProducto(copiaProductoParaDocumento(producto));
             d.setPrecio(producto.getPrecio());
             double subtotal = d.getCantidad() * producto.getPrecio();
             d.setSubtotal(subtotal);
@@ -126,7 +146,7 @@ public class PedidoServiceImpl implements PedidoService {
                 throw new BusinessException("Cada detalle debe referenciar un producto por id");
             }
             Producto producto = resolverProducto(d.getProducto().getId());
-            d.setProducto(producto);
+            d.setProducto(copiaProductoParaDocumento(producto));
             d.setPrecio(producto.getPrecio());
             double subtotal = d.getCantidad() * producto.getPrecio();
             d.setSubtotal(subtotal);
