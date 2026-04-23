@@ -48,6 +48,7 @@ Por defecto la API escucha en **http://localhost:8081** (configurable con `PORT`
 Comprobación rápida en navegador o cliente HTTP:
 
 - `GET http://localhost:8081/api/estado` — mensaje de salud de la aplicación
+- `GET http://localhost:8081/` — mensaje raíz amigable para despliegue
 - `GET http://localhost:8081/api/productos` — listado de productos semilla
 
 ## Convenciones HTTP
@@ -68,6 +69,7 @@ Los errores devuelven un cuerpo JSON uniforme (`timestamp`, `status`, `error`, `
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
+| GET | `/` | Respuesta base de la API (evita error 500 en raíz) |
 | GET | `/api/estado` | Comprueba que el backend responde |
 | GET | `/api/productos` | Lista productos |
 | GET | `/api/productos/{id}` | Obtiene un producto |
@@ -146,6 +148,7 @@ Usuario semilla: `admin@cafedronel.com` / `admin123`.
 ## Pruebas automatizadas
 
 - `BackendCafedronelApplicationTests`: carga del contexto Spring.
+- `HomeApiTest`: valida `GET /` (**200**) y `GET /favicon.ico` (**204**).
 - `ProductoApiTest`: MockMvc sobre listado, detalle **404**, creación **201** y validación **400**.
 - `AuthApiTest`: login inválido devuelve **401**.
 - `PedidoServiceImplTest`: cálculo de total al crear un pedido (catálogo mockeado).
