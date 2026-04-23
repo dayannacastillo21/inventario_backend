@@ -2,11 +2,14 @@ package com.example.backend_cafedronel.model;
 
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Usuario {
     private Integer id;
     private String rol;
     private String email;
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
     private String nombre;
 

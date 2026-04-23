@@ -1,59 +1,79 @@
 package com.example.backend_cafedronel.controller;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import com.example.backend_cafedronel.dto.PedidoCreateRequest;
+import com.example.backend_cafedronel.mapper.PedidoMapper;
+import com.example.backend_cafedronel.model.DetallePedido;
 import com.example.backend_cafedronel.model.Pedido;
+import com.example.backend_cafedronel.service.DetallePedidoService;
 import com.example.backend_cafedronel.service.PedidoService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import java.util.List;
 
 @RestController
-@RequestMapping("/pedidos")
+@RequestMapping("/api/pedidos")
 @CrossOrigin(origins = "*")
 public class PedidoController {
 
     private final PedidoService pedidoService;
+    private final DetallePedidoService detallePedidoService;
 
-    public PedidoController(PedidoService pedidoService) {
+    public PedidoController(PedidoService pedidoService, DetallePedidoService detallePedidoService) {
         this.pedidoService = pedidoService;
+        this.detallePedidoService = detallePedidoService;
     }
 
     @GetMapping
-    public ResponseEntity<List<Pedido>> getAllPedidos() {
+    public ResponseEntity<List<Pedido>> listar() {
         return ResponseEntity.ok(pedidoService.listar());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Pedido> getPedidoById(@PathVariable Integer id) {
+    public ResponseEntity<Pedido> obtenerPorId(@PathVariable Integer id) {
         return pedidoService.obtenerPorId(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/{id}/detalles")
+    public ResponseEntity<List<DetallePedido>> detalles(@PathVariable Integer id) {
+        if (pedidoService.obtenerPorId(id).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(detallePedidoService.obtenerPorPedido(id));
+    }
+
     @PostMapping
-    public ResponseEntity<Pedido> crearPedido(@RequestBody Pedido pedido) {
-        return ResponseEntity.ok(pedidoService.crear(pedido));
+    public ResponseEntity<Pedido> crear(@Valid @RequestBody PedidoCreateRequest request) {
+        Pedido creado = pedidoService.crear(PedidoMapper.toPedido(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Pedido> actualizarPedido(@PathVariable Integer id, @RequestBody Pedido pedido) {
-        Pedido actualizado = pedidoService.actualizar(id, pedido);
-        if (actualizado == null) {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<Pedido> actualizar(@PathVariable Integer id, @Valid @RequestBody PedidoCreateRequest request) {
+        Pedido actualizado = pedidoService.actualizar(id, PedidoMapper.toPedido(request));
         return ResponseEntity.ok(actualizado);
     }
 
     @PutMapping("/{id}/estado")
     public ResponseEntity<Pedido> actualizarEstado(@PathVariable Integer id, @RequestParam String estado) {
-        try {
-            return ResponseEntity.ok(pedidoService.actualizarEstado(id, estado));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(pedidoService.actualizarEstado(id, estado));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarPedido(@PathVariable Integer id) {
+    public ResponseEntity<Void> eliminar(@PathVariable Integer id) {
         pedidoService.eliminar(id);
         return ResponseEntity.noContent().build();
     }

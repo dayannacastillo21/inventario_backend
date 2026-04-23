@@ -1,10 +1,23 @@
 package com.example.backend_cafedronel.controller;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import com.example.backend_cafedronel.dto.UsuarioRegistroRequest;
+import com.example.backend_cafedronel.dto.UsuarioUpdateRequest;
 import com.example.backend_cafedronel.model.Usuario;
 import com.example.backend_cafedronel.service.UsuarioService;
-import java.util.*;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -17,34 +30,25 @@ public class UsuarioController {
         this.usuarioService = usuarioService;
     }
 
-    @GetMapping("/listar")
-    public ResponseEntity<List<Usuario>> listarUsuarios() {
+    @GetMapping
+    public ResponseEntity<List<Usuario>> listar() {
         return ResponseEntity.ok(usuarioService.listar());
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> request) {
-        return ResponseEntity.ok(usuarioService.login(request));
+    @PostMapping
+    public ResponseEntity<Usuario> registrar(@Valid @RequestBody UsuarioRegistroRequest request) {
+        Usuario creado = usuarioService.registrar(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }
 
-    @PostMapping("/registrar")
-    public ResponseEntity<Map<String, Object>> registrarUsuario(@RequestBody Usuario nuevoUsuario) {
-        return ResponseEntity.ok(usuarioService.registrar(nuevoUsuario));
-    }
-
-    @PutMapping("/editar/{id}")
-    public ResponseEntity<Usuario> actualizarUsuario(@PathVariable Integer id, @RequestBody Usuario usuarioActualizado) {
-        Usuario actualizado = usuarioService.actualizar(id, usuarioActualizado);
-
-        if (actualizado == null) {
-            return ResponseEntity.notFound().build();
-        }
-
+    @PutMapping("/{id}")
+    public ResponseEntity<Usuario> actualizar(@PathVariable Integer id, @Valid @RequestBody UsuarioUpdateRequest request) {
+        Usuario actualizado = usuarioService.actualizar(id, request);
         return ResponseEntity.ok(actualizado);
     }
 
-    @DeleteMapping("/eliminar/{id}")
-    public ResponseEntity<Void> eliminarUsuario(@PathVariable Integer id) {
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable Integer id) {
         usuarioService.eliminar(id);
         return ResponseEntity.noContent().build();
     }

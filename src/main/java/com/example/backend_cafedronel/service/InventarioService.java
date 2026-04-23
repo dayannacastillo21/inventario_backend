@@ -1,19 +1,18 @@
 package com.example.backend_cafedronel.service;
 
-import java.util.*;
 import com.example.backend_cafedronel.model.Inventario;
+
+import java.util.List;
 
 public interface InventarioService {
 
     List<Inventario> listar();
 
-    Map<String, Object> listarConRespuesta();
+    Inventario crear(Inventario item);
 
-    Map<String, Object> agregar(Inventario inventario);
+    Inventario actualizar(Integer id, Inventario actualizado);
 
-    Map<String, Object> editar(Integer id, Inventario actualizado);
+    void eliminar(Integer id);
 
-    Map<String, Object> eliminar(Integer id);
-
-    Map<String, Object> restarStock(Integer id, int cantidad);
+    Inventario deducirStock(Integer id, int unidades);
 }

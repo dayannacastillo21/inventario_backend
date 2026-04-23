@@ -1,9 +1,13 @@
 package com.example.backend_cafedronel.service;
 
-import org.springframework.stereotype.Service;
-import java.util.*;
-import java.sql.Timestamp;
+import com.example.backend_cafedronel.exception.ResourceNotFoundException;
 import com.example.backend_cafedronel.model.Producto;
+import org.springframework.stereotype.Service;
+
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ProductoServiceImpl implements ProductoService {
@@ -69,11 +73,14 @@ public class ProductoServiceImpl implements ProductoService {
                 return p;
             }
         }
-        return null;
+        throw new ResourceNotFoundException("Producto", id);
     }
 
     @Override
     public void eliminar(Integer id) {
-        productos.removeIf(p -> p.getId().equals(id));
+        boolean removed = productos.removeIf(p -> p.getId().equals(id));
+        if (!removed) {
+            throw new ResourceNotFoundException("Producto", id);
+        }
     }
 }

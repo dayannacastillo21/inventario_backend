@@ -1,10 +1,23 @@
 package com.example.backend_cafedronel.controller;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import com.example.backend_cafedronel.dto.DeduccionStockRequest;
+import com.example.backend_cafedronel.dto.InventarioRequest;
 import com.example.backend_cafedronel.model.Inventario;
 import com.example.backend_cafedronel.service.InventarioService;
-import java.util.*;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/inventario")
@@ -18,32 +31,40 @@ public class InventarioController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Inventario>> listarInventarioSimple() {
+    public ResponseEntity<List<Inventario>> listar() {
         return ResponseEntity.ok(inventarioService.listar());
     }
 
-    @GetMapping("/listar")
-    public ResponseEntity<Map<String, Object>> listarInventario() {
-        return ResponseEntity.ok(inventarioService.listarConRespuesta());
+    @PostMapping
+    public ResponseEntity<Inventario> crear(@Valid @RequestBody InventarioRequest request) {
+        Inventario creado = inventarioService.crear(toEntity(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }
 
-    @PostMapping("/agregar")
-    public ResponseEntity<Map<String, Object>> agregarProducto(@RequestBody Inventario inventario) {
-        return ResponseEntity.ok(inventarioService.agregar(inventario));
+    @PutMapping("/{id}")
+    public ResponseEntity<Inventario> actualizar(@PathVariable Integer id, @Valid @RequestBody InventarioRequest request) {
+        return ResponseEntity.ok(inventarioService.actualizar(id, toEntity(request)));
     }
 
-    @PutMapping("/editar/{id}")
-    public ResponseEntity<Map<String, Object>> editarProducto(@PathVariable Integer id, @RequestBody Inventario actualizado) {
-        return ResponseEntity.ok(inventarioService.editar(id, actualizado));
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable Integer id) {
+        inventarioService.eliminar(id);
+        return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/eliminar/{id}")
-    public ResponseEntity<Map<String, Object>> eliminarProducto(@PathVariable Integer id) {
-        return ResponseEntity.ok(inventarioService.eliminar(id));
+    @PostMapping("/{id}/deducciones")
+    public ResponseEntity<Inventario> deducirStock(@PathVariable Integer id, @Valid @RequestBody DeduccionStockRequest request) {
+        return ResponseEntity.ok(inventarioService.deducirStock(id, request.getUnidades()));
     }
 
-    @PutMapping("/{id}/restar/{cantidad}")
-    public ResponseEntity<Map<String, Object>> restarStock(@PathVariable Integer id, @PathVariable int cantidad) {
-        return ResponseEntity.ok(inventarioService.restarStock(id, cantidad));
+    private static Inventario toEntity(InventarioRequest request) {
+        Inventario item = new Inventario();
+        item.setNombreInsumo(request.getNombreInsumo());
+        item.setCantidad(request.getCantidad());
+        item.setUnidad(request.getUnidad());
+        item.setStockMinimo(request.getStockMinimo());
+        item.setPrecioUnitario(request.getPrecioUnitario());
+        item.setProveedor(request.getProveedor());
+        return item;
     }
 }
