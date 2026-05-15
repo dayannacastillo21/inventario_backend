@@ -2,54 +2,59 @@
 
 ## Descripción
 
-API REST desarrollada con Spring Boot para gestionar productos, inventario, pedidos, ventas, proveedores y usuarios. Los datos se mantienen **en memoria** (sin base de datos), pensado para demostración académica y pruebas rápidas.
+API REST desarrollada con Spring Boot para gestionar productos, inventario, pedidos, ventas, proveedores y usuarios.
+
+> Estado actual: proyecto en transición a persistencia real (JPA + PostgreSQL) y seguridad JWT.
 
 ## Objetivo
 
-Entregar un backend funcional con arquitectura por capas (controlador, servicio, modelo, DTO y manejo centralizado de errores), convenciones REST coherentes bajo el prefijo `/api`, validación de entrada y pruebas automatizadas mínimas pero reales.
+Entregar un backend funcional con arquitectura por capas (controller, service, repository, model, dto, exception), convenciones REST coherentes bajo `/api`, validación y seguridad por roles.
 
 ## Tecnologías
 
 - Java 17
 - Spring Boot 3.5.x
 - Maven 3.9+
-- Jakarta Validation (Bean Validation)
-- JUnit 5 y Spring Boot Test (MockMvc)
+- Spring Data JPA + Hibernate
+- PostgreSQL
+- Spring Security
+- JWT (jjwt)
+- Jakarta Validation
+- JUnit 5 y Spring Boot Test
 
 ## Estructura del proyecto
 
 ```
 src/main/java/com/example/backend_cafedronel/
-├── BackendCafedronelApplication.java
 ├── config/           # CORS
 ├── controller/       # API REST
-├── dto/              # Cuerpos de petición validados
+├── dto/              # Cuerpos de petición
 ├── exception/        # Excepciones y GlobalExceptionHandler
-├── mapper/           # Conversión DTO → modelo (pedidos)
+├── mapper/           # Conversión DTO → modelo
 ├── model/            # Entidades de dominio
-└── service/          # Lógica de negocio e implementaciones
+├── repository/       # JpaRepository
+├── security/         # SecurityConfig + JWT filter/service
+└── service/          # Lógica de negocio
 ```
 
-## Requisitos
+## Configuración (PostgreSQL + JWT)
 
-- JDK 17
-- Maven 3.9+ (o usar el wrapper `mvnw` / `mvnw.cmd` del proyecto)
+Variables configurables (`application.properties`):
+
+- `DB_URL=jdbc:postgresql://localhost:5432/cafedronel`
+- `DB_USER=postgres`
+- `DB_PASSWORD=postgres`
+- `JWT_SECRET=MyUltraSecretKeyForCafedronelJwtSigningKey2026`
+- `JWT_EXPIRATION_MS=86400000`
 
 ## Cómo ejecutar
 
 ```bash
-mvn -version
-mvn clean test
-mvn spring-boot:run
+chmod +x mvnw
+./mvnw spring-boot:run
 ```
 
-Por defecto la API escucha en **http://localhost:8081** (configurable con `PORT` en despliegues como Render).
-
-Comprobación rápida en navegador o cliente HTTP:
-
-- `GET http://localhost:8081/api/estado` — mensaje de salud de la aplicación
-- `GET http://localhost:8081/` — mensaje raíz amigable para despliegue
-- `GET http://localhost:8081/api/productos` — listado de productos semilla
+Por defecto la API escucha en `http://localhost:8081`.
 
 ## Convenciones HTTP
 
@@ -60,76 +65,32 @@ Comprobación rápida en navegador o cliente HTTP:
 | Borrado exitoso        | 204    |
 | Recurso no encontrado  | 404    |
 | Datos inválidos        | 400    |
-| Credenciales inválidas | 401 |
+| Credenciales inválidas | 401    |
 | Email duplicado        | 409    |
+| Prohibido por rol      | 403    |
 
-Los errores devuelven un cuerpo JSON uniforme (`timestamp`, `status`, `error`, `message`, `fieldErrors` en validación).
+## Endpoints principales
 
-## Tabla de endpoints principales
+### Públicos
+- `GET /`
+- `GET /api/estado`
+- `POST /api/auth/sesiones`
 
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET | `/` | Respuesta base de la API (evita error 500 en raíz) |
-| GET | `/api/estado` | Comprueba que el backend responde |
-| GET | `/api/productos` | Lista productos |
-| GET | `/api/productos/{id}` | Obtiene un producto |
-| GET | `/api/productos/categoria/{categoria}` | Filtra por categoría |
-| POST | `/api/productos` | Crea producto (cuerpo `ProductoRequest`, **201**) |
-| PUT | `/api/productos/{id}` | Actualiza producto |
-| DELETE | `/api/productos/{id}` | Elimina producto (**204**) |
-| GET | `/api/pedidos` | Lista pedidos |
-| GET | `/api/pedidos/{id}` | Obtiene un pedido |
-| GET | `/api/pedidos/{id}/detalles` | Líneas del pedido |
-| POST | `/api/pedidos` | Crea pedido (`PedidoCreateRequest`, **201**) |
-| PUT | `/api/pedidos/{id}` | Actualiza pedido |
-| PUT | `/api/pedidos/{id}/estado?estado=en_proceso` | Cambia estado (`pendiente`, `en_proceso`, `completado`, `cancelado`) |
-| DELETE | `/api/pedidos/{id}` | Elimina pedido (**204**) |
-| GET | `/api/ventas` | Lista ventas |
-| POST | `/api/ventas` | Registra venta (`VentaRequest`, **201**) |
-| PUT | `/api/ventas/{id}` | Actualiza venta |
-| DELETE | `/api/ventas/{id}` | Elimina venta (**204**) |
-| GET | `/api/proveedores` | Lista proveedores |
-| POST | `/api/proveedores` | Crea proveedor (`ProveedorRequest`, **201**) |
-| PUT | `/api/proveedores/{id}` | Actualiza proveedor |
-| DELETE | `/api/proveedores/{id}` | Elimina proveedor (**204**) |
-| GET | `/api/inventario` | Lista insumos |
-| POST | `/api/inventario` | Alta de insumo (`InventarioRequest`, **201**) |
-| PUT | `/api/inventario/{id}` | Actualiza insumo |
-| DELETE | `/api/inventario/{id}` | Elimina insumo (**204**) |
-| POST | `/api/inventario/{id}/deducciones` | Descuenta stock (`{"unidades":n}`) |
-| GET | `/api/usuarios` | Lista usuarios |
-| POST | `/api/usuarios` | Registro (`UsuarioRegistroRequest`, **201**) |
-| PUT | `/api/usuarios/{id}` | Actualiza usuario (`UsuarioUpdateRequest`) |
-| DELETE | `/api/usuarios/{id}` | Elimina usuario (**204**) |
-| POST | `/api/auth/sesiones` | Inicio de sesión (`LoginRequest` → `LoginResponse`) |
+### Productos (CRUD)
+- `GET /api/productos`
+- `GET /api/productos/{id}`
+- `GET /api/productos/categoria/{categoria}`
+- `POST /api/productos`
+- `PUT /api/productos/{id}`
+- `DELETE /api/productos/{id}`
 
-### Ejemplos de cuerpo (JSON)
+### Seguridad por roles
+- `GET /api/user/ping` -> USER o ADMIN
+- `GET /api/admin/ping` -> ADMIN
 
-**Crear pedido** (`POST /api/pedidos`):
+## Ejemplos JSON
 
-```json
-{
-  "cliente": "María",
-  "detalles": [
-    { "productoId": 1, "cantidad": 2 },
-    { "productoId": 2, "cantidad": 1 }
-  ]
-}
-```
-
-**Registrar usuario** (`POST /api/usuarios`):
-
-```json
-{
-  "nombre": "Nuevo",
-  "email": "nuevo@cafedronel.com",
-  "password": "secreto",
-  "rol": "usuario"
-}
-```
-
-**Sesión** (`POST /api/auth/sesiones`):
-
+### Login
 ```json
 {
   "email": "admin@cafedronel.com",
@@ -137,30 +98,46 @@ Los errores devuelven un cuerpo JSON uniforme (`timestamp`, `status`, `error`, `
 }
 ```
 
-Usuario semilla: `admin@cafedronel.com` / `admin123`.
-
-## Evidencia sugerida para la entrega
-
-1. **Build y pruebas**: captura de consola con `mvn clean test` finalizando en **BUILD SUCCESS**.
-2. **Servidor en ejecución**: captura de `mvn spring-boot:run` y log de arranque en puerto **8081**.
-3. **Endpoints**: capturas de Postman, Thunder Client o navegador contra `GET /api/estado` y `GET /api/productos` (u otros de la tabla).
-
-## Pruebas automatizadas
-
-- `BackendCafedronelApplicationTests`: carga del contexto Spring.
-- `HomeApiTest`: valida `GET /` (**200**) y `GET /favicon.ico` (**204**).
-- `ProductoApiTest`: MockMvc sobre listado, detalle **404**, creación **201** y validación **400**.
-- `AuthApiTest`: login inválido devuelve **401**.
-- `PedidoServiceImplTest`: cálculo de total al crear un pedido (catálogo mockeado).
-- `UsuarioServiceImplTest`: registro con email duplicado lanza `DuplicateEmailException`.
-
-Ejecutar todas con:
-
-```bash
-mvn clean test
+### Login response
+```json
+{
+  "userId": 1,
+  "userName": "Admin",
+  "email": "admin@cafedronel.com",
+  "role": "ADMIN",
+  "token": "eyJ..."
+}
 ```
 
-## Notas técnicas
+### Crear producto
+```json
+{
+  "nombre": "Capuccino",
+  "precio": 12.5,
+  "categoria": "bebidas",
+  "descripcion": "Cafe con leche"
+}
+```
 
-- Los precios y totales de **pedidos** y **ventas** se resuelven siempre desde el mismo **catálogo** (`ProductoService`), evitando listas duplicadas inconsistentes.
-- Las contraseñas no se serializan en las respuestas JSON de usuario (`@JsonProperty(access = WRITE_ONLY)`).
+## Cómo probar en Postman
+
+1. Hacer `POST /api/auth/sesiones` y copiar `token`.
+2. En requests protegidos, agregar header:
+   - `Authorization: Bearer <token>`
+3. Probar:
+   - `GET /api/productos`
+   - `GET /api/user/ping`
+   - `GET /api/admin/ping`
+
+## Evidencias sugeridas para la rúbrica
+
+1. Login exitoso con token JWT.
+2. Acceso a endpoint protegido con token válido (200).
+3. Acceso sin token (401).
+4. Acceso con rol insuficiente (403).
+5. CRUD completo de productos (POST/GET/PUT/DELETE).
+6. Error controlado 404 (`ResourceNotFoundException`).
+
+## Nota importante
+
+Si vienes de una versión anterior en memoria, parte de los tests antiguos pueden requerir actualización para adaptarse a repositorios JPA y seguridad JWT.
