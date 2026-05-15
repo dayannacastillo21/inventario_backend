@@ -1,97 +1,31 @@
 package com.example.backend_cafedronel.service;
 
-import com.example.backend_cafedronel.dto.LoginRequest;
-import com.example.backend_cafedronel.dto.LoginResponse;
-import com.example.backend_cafedronel.dto.UsuarioRegistroRequest;
-import com.example.backend_cafedronel.dto.UsuarioUpdateRequest;
-import com.example.backend_cafedronel.exception.DuplicateEmailException;
-import com.example.backend_cafedronel.exception.InvalidCredentialsException;
-import com.example.backend_cafedronel.exception.ResourceNotFoundException;
+import com.example.backend_cafedronel.dto.*;
+import com.example.backend_cafedronel.exception.*;
 import com.example.backend_cafedronel.model.Usuario;
+import com.example.backend_cafedronel.repository.UsuarioRepository;
+import com.example.backend_cafedronel.security.JwtService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UsuarioServiceImpl implements UsuarioService {
-
-    private final List<Usuario> usuarios = new ArrayList<>();
-    private int nextId = 1;
-
-    public UsuarioServiceImpl() {
-        Usuario admin = new Usuario();
-        admin.setId(nextId++);
-        admin.setNombre("Admin");
-        admin.setEmail("admin@cafedronel.com");
-        admin.setPassword("admin123");
-        admin.setRol("admin");
-        admin.setActivo(true);
-        admin.setFechaRegistro(LocalDateTime.now());
-        usuarios.add(admin);
-    }
-
-    @Override
+    private final UsuarioRepository usuarioRepository; private final PasswordEncoder passwordEncoder; private final JwtService jwtService;
+    public UsuarioServiceImpl(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, JwtService jwtService) { this.usuarioRepository = usuarioRepository; this.passwordEncoder = passwordEncoder; this.jwtService = jwtService; }
     public LoginResponse autenticar(LoginRequest request) {
-        Optional<Usuario> found = usuarios.stream()
-                .filter(u -> u.getEmail().equalsIgnoreCase(request.getEmail())
-                        && u.getPassword().equals(request.getPassword())
-                        && Boolean.TRUE.equals(u.getActivo()))
-                .findFirst();
-
-        if (found.isEmpty()) {
-            throw new InvalidCredentialsException();
-        }
-        Usuario u = found.get();
-        return new LoginResponse(u.getId(), u.getNombre(), u.getEmail(), u.getRol());
+        Usuario u = usuarioRepository.findByEmailIgnoreCase(request.getEmail()).orElseThrow(InvalidCredentialsException::new);
+        if(!Boolean.TRUE.equals(u.getActivo()) || !passwordEncoder.matches(request.getPassword(), u.getPassword())) throw new InvalidCredentialsException();
+        return new LoginResponse(u.getId(), u.getNombre(), u.getEmail(), u.getRol(), jwtService.generateToken(u.getEmail(), u.getRol()));
     }
-
-    @Override
-    public Usuario registrar(UsuarioRegistroRequest request) {
-        boolean existe = usuarios.stream()
-                .anyMatch(u -> u.getEmail().equalsIgnoreCase(request.getEmail()));
-        if (existe) {
-            throw new DuplicateEmailException(request.getEmail());
-        }
-        Usuario nuevo = new Usuario();
-        nuevo.setId(nextId++);
-        nuevo.setNombre(request.getNombre());
-        nuevo.setEmail(request.getEmail());
-        nuevo.setPassword(request.getPassword());
-        nuevo.setRol(request.getRol() != null && !request.getRol().isBlank() ? request.getRol() : "usuario");
-        nuevo.setActivo(true);
-        nuevo.setFechaRegistro(LocalDateTime.now());
-        usuarios.add(nuevo);
-        return nuevo;
+    @Transactional public Usuario registrar(UsuarioRegistroRequest request) {
+        if(usuarioRepository.existsByEmailIgnoreCase(request.getEmail())) throw new DuplicateEmailException(request.getEmail());
+        Usuario nuevo = new Usuario(); nuevo.setNombre(request.getNombre()); nuevo.setEmail(request.getEmail()); nuevo.setPassword(passwordEncoder.encode(request.getPassword())); nuevo.setRol(request.getRol()==null?"USER":request.getRol().toUpperCase()); nuevo.setActivo(true);
+        return usuarioRepository.save(nuevo);
     }
-
-    @Override
-    public Usuario actualizar(Integer id, UsuarioUpdateRequest usuarioActualizado) {
-        Usuario usuario = usuarios.stream()
-                .filter(u -> u.getId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario", id));
-
-        usuario.setNombre(usuarioActualizado.getNombre());
-        usuario.setEmail(usuarioActualizado.getEmail());
-        usuario.setPassword(usuarioActualizado.getPassword());
-        usuario.setRol(usuarioActualizado.getRol());
-        usuario.setActivo(usuarioActualizado.getActivo());
-
-        return usuario;
-    }
-
-    @Override
-    public void eliminar(Integer id) {
-        if (!usuarios.removeIf(u -> u.getId().equals(id))) {
-            throw new ResourceNotFoundException("Usuario", id);
-        }
-    }
-
-    @Override
-    public List<Usuario> listar() {
-        return new ArrayList<>(usuarios);
-    }
+    @Transactional public Usuario actualizar(Integer id, UsuarioUpdateRequest req) { Usuario u=usuarioRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Usuario", id)); u.setNombre(req.getNombre()); u.setEmail(req.getEmail()); if(req.getPassword()!=null&&!req.getPassword().isBlank()) u.setPassword(passwordEncoder.encode(req.getPassword())); u.setRol(req.getRol()); u.setActivo(req.getActivo()); return usuarioRepository.save(u);} 
+    @Transactional public void eliminar(Integer id) { if(!usuarioRepository.existsById(id)) throw new ResourceNotFoundException("Usuario", id); usuarioRepository.deleteById(id);} 
+    public List<Usuario> listar() { return usuarioRepository.findAll(); }
 }
