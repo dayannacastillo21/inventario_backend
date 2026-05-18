@@ -1,7 +1,12 @@
 package com.example.backend_cafedronel.service;
 
-import com.example.backend_cafedronel.dto.*;
-import com.example.backend_cafedronel.exception.*;
+import com.example.backend_cafedronel.dto.LoginRequest;
+import com.example.backend_cafedronel.dto.LoginResponse;
+import com.example.backend_cafedronel.dto.UsuarioRegistroRequest;
+import com.example.backend_cafedronel.dto.UsuarioUpdateRequest;
+import com.example.backend_cafedronel.exception.DuplicateEmailException;
+import com.example.backend_cafedronel.exception.InvalidCredentialsException;
+import com.example.backend_cafedronel.exception.ResourceNotFoundException;
 import com.example.backend_cafedronel.model.Usuario;
 import com.example.backend_cafedronel.repository.UsuarioRepository;
 import com.example.backend_cafedronel.security.JwtService;
@@ -13,19 +18,97 @@ import java.util.List;
 
 @Service
 public class UsuarioServiceImpl implements UsuarioService {
-    private final UsuarioRepository usuarioRepository; private final PasswordEncoder passwordEncoder; private final JwtService jwtService;
-    public UsuarioServiceImpl(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, JwtService jwtService) { this.usuarioRepository = usuarioRepository; this.passwordEncoder = passwordEncoder; this.jwtService = jwtService; }
-    public LoginResponse autenticar(LoginRequest request) {
-        Usuario u = usuarioRepository.findByEmailIgnoreCase(request.getEmail()).orElseThrow(InvalidCredentialsException::new);
-        if(!Boolean.TRUE.equals(u.getActivo()) || !passwordEncoder.matches(request.getPassword(), u.getPassword())) throw new InvalidCredentialsException();
-        return new LoginResponse(u.getId(), u.getNombre(), u.getEmail(), u.getRol(), jwtService.generateToken(u.getEmail(), u.getRol()));
+
+    private static final String DEFAULT_ROLE = "USER";
+
+    private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+
+    public UsuarioServiceImpl(
+            UsuarioRepository usuarioRepository,
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService) {
+        this.usuarioRepository = usuarioRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
-    @Transactional public Usuario registrar(UsuarioRegistroRequest request) {
-        if(usuarioRepository.existsByEmailIgnoreCase(request.getEmail())) throw new DuplicateEmailException(request.getEmail());
-        Usuario nuevo = new Usuario(); nuevo.setNombre(request.getNombre()); nuevo.setEmail(request.getEmail()); nuevo.setPassword(passwordEncoder.encode(request.getPassword())); nuevo.setRol(request.getRol()==null?"USER":request.getRol().toUpperCase()); nuevo.setActivo(true);
+
+    @Override
+    public LoginResponse autenticar(LoginRequest request) {
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(request.getEmail())
+                .orElseThrow(InvalidCredentialsException::new);
+
+        if (!Boolean.TRUE.equals(usuario.getActivo())
+                || usuario.getPassword() == null
+                || !passwordEncoder.matches(request.getPassword(), usuario.getPassword())) {
+            throw new InvalidCredentialsException();
+        }
+
+        return new LoginResponse(
+                usuario.getId(),
+                usuario.getNombre(),
+                usuario.getEmail(),
+                usuario.getRol(),
+                jwtService.generateToken(usuario.getEmail(), usuario.getRol()));
+    }
+
+    @Override
+    @Transactional
+    public Usuario registrar(UsuarioRegistroRequest request) {
+        if (usuarioRepository.existsByEmailIgnoreCase(request.getEmail())) {
+            throw new DuplicateEmailException(request.getEmail());
+        }
+
+        Usuario nuevo = new Usuario();
+        nuevo.setNombre(request.getNombre());
+        nuevo.setEmail(request.getEmail());
+        nuevo.setPassword(passwordEncoder.encode(request.getPassword()));
+        nuevo.setRol(DEFAULT_ROLE);
+        nuevo.setActivo(true);
         return usuarioRepository.save(nuevo);
     }
-    @Transactional public Usuario actualizar(Integer id, UsuarioUpdateRequest req) { Usuario u=usuarioRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Usuario", id)); u.setNombre(req.getNombre()); u.setEmail(req.getEmail()); if(req.getPassword()!=null&&!req.getPassword().isBlank()) u.setPassword(passwordEncoder.encode(req.getPassword())); u.setRol(req.getRol()); u.setActivo(req.getActivo()); return usuarioRepository.save(u);} 
-    @Transactional public void eliminar(Integer id) { if(!usuarioRepository.existsById(id)) throw new ResourceNotFoundException("Usuario", id); usuarioRepository.deleteById(id);} 
-    public List<Usuario> listar() { return usuarioRepository.findAll(); }
+
+    @Override
+    @Transactional
+    public Usuario actualizar(Integer id, UsuarioUpdateRequest request) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario", id));
+
+        usuarioRepository.findByEmailIgnoreCase(request.getEmail())
+                .filter(existing -> !existing.getId().equals(id))
+                .ifPresent(existing -> {
+                    throw new DuplicateEmailException(request.getEmail());
+                });
+
+        usuario.setNombre(request.getNombre());
+        usuario.setEmail(request.getEmail());
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            usuario.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+        usuario.setRol(normalizarRol(request.getRol()));
+        usuario.setActivo(request.getActivo());
+        return usuarioRepository.save(usuario);
+    }
+
+    @Override
+    @Transactional
+    public void eliminar(Integer id) {
+        if (!usuarioRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Usuario", id);
+        }
+        usuarioRepository.deleteById(id);
+    }
+
+    @Override
+    public List<Usuario> listar() {
+        return usuarioRepository.findAll();
+    }
+
+    private static String normalizarRol(String rol) {
+        if (rol == null || rol.isBlank()) {
+            return DEFAULT_ROLE;
+        }
+        return rol.replace("ROLE_", "").trim().toUpperCase();
+    }
 }
