@@ -2,9 +2,22 @@
 
 API REST desarrollada con Spring Boot para gestionar productos, usuarios, autenticacion, proveedores, inventario, pedidos y ventas de Cafedronel.
 
+**Repositorio:** https://github.com/dayannacastillo21/inventario_backend
+
 Este repositorio corresponde al **Avance de Proyecto Final 02 (APF02)**. La documentacion academica detallada (JPA, CRUD, consultas, transacciones, seguridad, JWT y evidencias) esta en **[AVANCE_PROYECTO_FINAL_02.md](AVANCE_PROYECTO_FINAL_02.md)**.
 
 El avance anterior (APF1) cubria estructura Spring Boot, endpoints REST, capas, pruebas y documentacion base; APF02 profundiza en persistencia JPA, CRUD completo, consultas transaccionales, Spring Security y JWT.
+
+## Documentacion del repositorio
+
+| Documento | Contenido |
+|-----------|-----------|
+| [AVANCE_PROYECTO_FINAL_02.md](AVANCE_PROYECTO_FINAL_02.md) | Informe tecnico APF02 (JPA, CRUD, consultas, seguridad, JWT) |
+| [CHECKLIST_APF02.md](CHECKLIST_APF02.md) | Lista de verificacion para entrega y capturas |
+| [database/DISENO_BASE_DATOS.md](database/DISENO_BASE_DATOS.md) | Modelo relacional y scripts SQL |
+| [docs/postman/Cafedronel-APF02.postman_collection.json](docs/postman/Cafedronel-APF02.postman_collection.json) | Coleccion Postman para pruebas |
+| `Informe_Avance_Proyecto_Final_Cafedronel.docx` | Informe Word para el profesor |
+| [application-example.properties](src/main/resources/application-example.properties) | Plantilla de variables de entorno (sin secretos reales) |
 
 ## Objetivo del avance
 
