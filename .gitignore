@@ -37,6 +37,9 @@ build/
 .env.*
 !.env.example
 
+### Archivos temporales Office ###
+~$*
+
 !frontend/
 !frontend/**
 !backend/
