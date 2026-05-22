@@ -95,7 +95,16 @@ erDiagram
 | **V6** | `V6__ventas.sql` | Tabla `ventas` |
 | **V7** | `V7__indices_y_datos_demo.sql` | Índices + datos de prueba |
 
-Copias manuales (mismo contenido): `database/scripts/v0.sql` … `v7.sql`.
+Copias manuales (mismo contenido): `database/scripts/V0__bootstrap.sql` … `V7__indices_y_datos_demo.sql`.
+
+### Mantenimiento tras pruebas (Postman / pgAdmin)
+
+| Script | Uso |
+|--------|-----|
+| [limpiar_productos_duplicados_y_catalogo.sql](scripts/limpiar_productos_duplicados_y_catalogo.sql) | Quita duplicados por `nombre`, inserta menú faltante y renumera IDs 1…N |
+| [reordenar_ids_productos.sql](scripts/reordenar_ids_productos.sql) | Solo renumera `productos.id` sin huecos y actualiza FK |
+
+Detalle de ejecución: [database/scripts/README.md](scripts/README.md).
 
 ## Crear la base en PostgreSQL (una sola vez)
 

@@ -15,6 +15,7 @@ El avance anterior (APF1) cubria estructura Spring Boot, endpoints REST, capas, 
 | [AVANCE_PROYECTO_FINAL_02.md](AVANCE_PROYECTO_FINAL_02.md) | Informe tecnico APF02 (JPA, CRUD, consultas, seguridad, JWT) |
 | [CHECKLIST_APF02.md](CHECKLIST_APF02.md) | Lista de verificacion para entrega y capturas |
 | [database/DISENO_BASE_DATOS.md](database/DISENO_BASE_DATOS.md) | Modelo relacional y scripts SQL |
+| [database/scripts/README.md](database/scripts/README.md) | Limpieza de duplicados y reordenar IDs de productos |
 | [docs/postman/Cafedronel-APF02.postman_collection.json](docs/postman/Cafedronel-APF02.postman_collection.json) | Coleccion Postman para pruebas |
 | `Informe_Avance_Proyecto_Final_Cafedronel.docx` | Informe Word para el profesor |
 | [application-example.properties](src/main/resources/application-example.properties) | Plantilla de variables de entorno (sin secretos reales) |
