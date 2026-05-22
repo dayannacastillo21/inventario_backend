@@ -1,10 +1,14 @@
 package com.example.backend_cafedronel;
 
+import com.example.backend_cafedronel.model.Producto;
+import com.example.backend_cafedronel.repository.ProductoRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -16,10 +20,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@WithMockUser
 class ProductoApiTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ProductoRepository productoRepository;
+
+    private Producto productoExistente;
+
+    @BeforeEach
+    void setUp() {
+        productoRepository.deleteAll();
+        productoExistente = productoRepository.save(producto("Cafe Americano", 8.0, "bebidas"));
+        productoRepository.save(producto("Cappuccino", 12.0, "bebidas"));
+        productoRepository.save(producto("Croissant", 6.5, "comida"));
+    }
 
     @Test
     void listarProductos_devuelve200YLista() throws Exception {
@@ -30,9 +48,9 @@ class ProductoApiTest {
 
     @Test
     void obtenerProductoPorId_existente_devuelve200() throws Exception {
-        mockMvc.perform(get("/api/productos/1"))
+        mockMvc.perform(get("/api/productos/" + productoExistente.getId()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.id").value(productoExistente.getId()))
                 .andExpect(jsonPath("$.nombre").exists());
     }
 
@@ -62,5 +80,14 @@ class ProductoApiTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.fieldErrors").exists());
+    }
+
+    private static Producto producto(String nombre, Double precio, String categoria) {
+        Producto producto = new Producto();
+        producto.setNombre(nombre);
+        producto.setPrecio(precio);
+        producto.setCategoria(categoria);
+        producto.setDescripcion("Producto de prueba");
+        return producto;
     }
 }
