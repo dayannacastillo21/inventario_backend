@@ -4,7 +4,6 @@ import com.example.backend_cafedronel.dto.ProveedorRequest;
 import com.example.backend_cafedronel.model.Proveedor;
 import com.example.backend_cafedronel.service.ProveedorService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -32,10 +32,15 @@ public class ProveedorController {
         return ResponseEntity.ok(proveedorService.listar());
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<Proveedor> obtenerPorId(@PathVariable Integer id) {
+        return ResponseEntity.ok(proveedorService.obtenerPorId(id));
+    }
+
     @PostMapping
     public ResponseEntity<Proveedor> crear(@Valid @RequestBody ProveedorRequest request) {
         Proveedor creado = proveedorService.crear(toEntity(request));
-        return ResponseEntity.status(HttpStatus.CREATED).body(creado);
+        return ResponseEntity.created(URI.create("/api/proveedores/" + creado.getId())).body(creado);
     }
 
     @PutMapping("/{id}")

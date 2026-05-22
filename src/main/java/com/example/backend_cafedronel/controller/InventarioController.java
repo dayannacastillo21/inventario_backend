@@ -5,7 +5,6 @@ import com.example.backend_cafedronel.dto.InventarioRequest;
 import com.example.backend_cafedronel.model.Inventario;
 import com.example.backend_cafedronel.service.InventarioService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -33,10 +33,20 @@ public class InventarioController {
         return ResponseEntity.ok(inventarioService.listar());
     }
 
+    @GetMapping("/alertas/stock-bajo")
+    public ResponseEntity<List<Inventario>> listarStockBajo() {
+        return ResponseEntity.ok(inventarioService.listarConStockBajo());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Inventario> obtenerPorId(@PathVariable Integer id) {
+        return ResponseEntity.ok(inventarioService.obtenerPorId(id));
+    }
+
     @PostMapping
     public ResponseEntity<Inventario> crear(@Valid @RequestBody InventarioRequest request) {
         Inventario creado = inventarioService.crear(toEntity(request));
-        return ResponseEntity.status(HttpStatus.CREATED).body(creado);
+        return ResponseEntity.created(URI.create("/api/inventario/" + creado.getId())).body(creado);
     }
 
     @PutMapping("/{id}")

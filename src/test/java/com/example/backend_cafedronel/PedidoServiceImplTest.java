@@ -3,6 +3,7 @@ package com.example.backend_cafedronel;
 import com.example.backend_cafedronel.model.DetallePedido;
 import com.example.backend_cafedronel.model.Pedido;
 import com.example.backend_cafedronel.model.Producto;
+import com.example.backend_cafedronel.repository.PedidoRepository;
 import com.example.backend_cafedronel.service.PedidoServiceImpl;
 import com.example.backend_cafedronel.service.ProductoService;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +17,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -24,11 +26,14 @@ class PedidoServiceImplTest {
     @Mock
     private ProductoService productoService;
 
+    @Mock
+    private PedidoRepository pedidoRepository;
+
     private PedidoServiceImpl pedidoService;
 
     @BeforeEach
     void setUp() {
-        pedidoService = new PedidoServiceImpl(productoService);
+        pedidoService = new PedidoServiceImpl(productoService, pedidoRepository);
     }
 
     @Test
@@ -38,6 +43,11 @@ class PedidoServiceImplTest {
         catalogo.setNombre("Test");
         catalogo.setPrecio(15.0);
         when(productoService.obtenerPorId(10)).thenReturn(Optional.of(catalogo));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> {
+            Pedido guardado = invocation.getArgument(0);
+            guardado.setId(1);
+            return guardado;
+        });
 
         Pedido pedido = new Pedido();
         pedido.setCliente("Cliente prueba");

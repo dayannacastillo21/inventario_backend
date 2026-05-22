@@ -1,11 +1,11 @@
 package com.example.backend_cafedronel.controller;
 
 import com.example.backend_cafedronel.dto.UsuarioRegistroRequest;
+import com.example.backend_cafedronel.dto.UsuarioResponse;
 import com.example.backend_cafedronel.dto.UsuarioUpdateRequest;
 import com.example.backend_cafedronel.model.Usuario;
 import com.example.backend_cafedronel.service.UsuarioService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -28,21 +29,30 @@ public class UsuarioController {
         this.usuarioService = usuarioService;
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<UsuarioResponse> obtenerPorId(@PathVariable Integer id) {
+        return ResponseEntity.ok(UsuarioResponse.from(usuarioService.obtenerPorId(id)));
+    }
+
     @GetMapping
-    public ResponseEntity<List<Usuario>> listar() {
-        return ResponseEntity.ok(usuarioService.listar());
+    public ResponseEntity<List<UsuarioResponse>> listar() {
+        List<UsuarioResponse> usuarios = usuarioService.listar().stream()
+                .map(UsuarioResponse::from)
+                .toList();
+        return ResponseEntity.ok(usuarios);
     }
 
     @PostMapping
-    public ResponseEntity<Usuario> registrar(@Valid @RequestBody UsuarioRegistroRequest request) {
+    public ResponseEntity<UsuarioResponse> registrar(@Valid @RequestBody UsuarioRegistroRequest request) {
         Usuario creado = usuarioService.registrar(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(creado);
+        return ResponseEntity.created(URI.create("/api/usuarios/" + creado.getId()))
+                .body(UsuarioResponse.from(creado));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Usuario> actualizar(@PathVariable Integer id, @Valid @RequestBody UsuarioUpdateRequest request) {
+    public ResponseEntity<UsuarioResponse> actualizar(@PathVariable Integer id, @Valid @RequestBody UsuarioUpdateRequest request) {
         Usuario actualizado = usuarioService.actualizar(id, request);
-        return ResponseEntity.ok(actualizado);
+        return ResponseEntity.ok(UsuarioResponse.from(actualizado));
     }
 
     @DeleteMapping("/{id}")

@@ -7,6 +7,8 @@ public interface ProveedorService {
 
     List<Proveedor> listar();
 
+    Proveedor obtenerPorId(Integer id);
+
     Proveedor crear(Proveedor proveedor);
 
     Proveedor actualizar(Integer id, Proveedor proveedor);

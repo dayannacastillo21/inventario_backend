@@ -11,6 +11,8 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.UUID;
+
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -33,10 +35,10 @@ class ProductoApiTest {
 
     @BeforeEach
     void setUp() {
-        productoRepository.deleteAll();
-        productoExistente = productoRepository.save(producto("Cafe Americano", 8.0, "bebidas"));
-        productoRepository.save(producto("Cappuccino", 12.0, "bebidas"));
-        productoRepository.save(producto("Croissant", 6.5, "comida"));
+        String sufijo = UUID.randomUUID().toString();
+        productoExistente = productoRepository.save(producto("Cafe Americano " + sufijo, 8.0, "bebidas"));
+        productoRepository.save(producto("Cappuccino " + sufijo, 12.0, "bebidas"));
+        productoRepository.save(producto("Croissant " + sufijo, 6.5, "comida"));
     }
 
     @Test
@@ -55,9 +57,25 @@ class ProductoApiTest {
     }
 
     @Test
+    void listarProductosActivos_devuelve200() throws Exception {
+        mockMvc.perform(get("/api/productos/activos"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
+    void buscarPorPrecioMinimo_devuelve200() throws Exception {
+        mockMvc.perform(get("/api/productos/busqueda/precio-minimo").param("min", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
     void obtenerProductoPorId_inexistente_devuelve404() throws Exception {
         mockMvc.perform(get("/api/productos/99999"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").exists());
     }
 
     @Test

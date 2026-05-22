@@ -5,7 +5,6 @@ import com.example.backend_cafedronel.model.Producto;
 import com.example.backend_cafedronel.model.Venta;
 import com.example.backend_cafedronel.service.VentaService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -33,10 +33,25 @@ public class VentaController {
         return ResponseEntity.ok(ventaService.listar());
     }
 
+    @GetMapping("/usuario/{usuarioId}")
+    public ResponseEntity<List<Venta>> listarPorUsuario(@PathVariable Integer usuarioId) {
+        return ResponseEntity.ok(ventaService.listarPorUsuario(usuarioId));
+    }
+
+    @GetMapping("/estado/{estado}")
+    public ResponseEntity<List<Venta>> listarPorEstado(@PathVariable String estado) {
+        return ResponseEntity.ok(ventaService.listarPorEstado(estado));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Venta> obtenerPorId(@PathVariable Integer id) {
+        return ResponseEntity.ok(ventaService.obtenerPorId(id));
+    }
+
     @PostMapping
     public ResponseEntity<Venta> crear(@Valid @RequestBody VentaRequest request) {
         Venta creada = ventaService.crear(toEntity(request));
-        return ResponseEntity.status(HttpStatus.CREATED).body(creada);
+        return ResponseEntity.created(URI.create("/api/ventas/" + creada.getId())).body(creada);
     }
 
     @PutMapping("/{id}")

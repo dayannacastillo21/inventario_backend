@@ -9,6 +9,9 @@ import java.util.List;
 
 public interface ProductoRepository extends JpaRepository<Producto, Integer> {
     List<Producto> findByCategoriaIgnoreCase(String categoria);
-    @Query("select p from Producto p where p.precio >= :min")
+
+    List<Producto> findByActivoTrueOrderByNombreAsc();
+
+    @Query("select p from Producto p where p.precio >= :min order by p.precio asc")
     List<Producto> buscarConPrecioMinimo(@Param("min") Double min);
 }

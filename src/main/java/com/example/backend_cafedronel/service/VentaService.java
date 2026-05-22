@@ -7,6 +7,12 @@ public interface VentaService {
 
     List<Venta> listar();
 
+    List<Venta> listarPorUsuario(Integer usuarioId);
+
+    List<Venta> listarPorEstado(String estado);
+
+    Venta obtenerPorId(Integer id);
+
     Venta crear(Venta venta);
 
     Venta actualizar(Integer id, Venta venta);

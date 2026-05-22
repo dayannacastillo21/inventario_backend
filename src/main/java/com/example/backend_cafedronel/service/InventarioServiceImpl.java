@@ -3,94 +3,93 @@ package com.example.backend_cafedronel.service;
 import com.example.backend_cafedronel.exception.BusinessException;
 import com.example.backend_cafedronel.exception.ResourceNotFoundException;
 import com.example.backend_cafedronel.model.Inventario;
+import com.example.backend_cafedronel.model.Proveedor;
+import com.example.backend_cafedronel.repository.InventarioRepository;
+import com.example.backend_cafedronel.repository.ProveedorRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class InventarioServiceImpl implements InventarioService {
 
-    private static final ZoneId LIMA_ZONE = ZoneId.of("America/Lima");
-    private final List<Inventario> inventario = new ArrayList<>();
-    private int nextId = 1;
+    private final InventarioRepository inventarioRepository;
+    private final ProveedorRepository proveedorRepository;
 
-    public InventarioServiceImpl() {
-        Inventario i1 = new Inventario();
-        i1.setId(nextId++);
-        i1.setNombreInsumo("Granos de café");
-        i1.setCantidad(50);
-        i1.setUnidad("kg");
-        i1.setStockMinimo(10);
-        i1.setPrecioUnitario(25.0f);
-        i1.setProveedor("Distribuidora Café Peru");
-        i1.setFechaActualizacion(LocalDateTime.now(LIMA_ZONE));
-        inventario.add(i1);
-
-        Inventario i2 = new Inventario();
-        i2.setId(nextId++);
-        i2.setNombreInsumo("Leche entera");
-        i2.setCantidad(30);
-        i2.setUnidad("litros");
-        i2.setStockMinimo(5);
-        i2.setPrecioUnitario(4.5f);
-        i2.setProveedor("Lácteos del Norte");
-        i2.setFechaActualizacion(LocalDateTime.now(LIMA_ZONE));
-        inventario.add(i2);
+    public InventarioServiceImpl(
+            InventarioRepository inventarioRepository,
+            ProveedorRepository proveedorRepository) {
+        this.inventarioRepository = inventarioRepository;
+        this.proveedorRepository = proveedorRepository;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Inventario> listar() {
-        return new ArrayList<>(inventario);
+        return inventarioRepository.findAll(Sort.by(Sort.Direction.ASC, "id"));
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<Inventario> listarConStockBajo() {
+        return inventarioRepository.findConStockBajo();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Inventario obtenerPorId(Integer id) {
+        return inventarioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventario", id));
+    }
+
+    @Override
+    @Transactional
     public Inventario crear(Inventario item) {
-        item.setId(nextId++);
-        item.setFechaActualizacion(LocalDateTime.now(LIMA_ZONE));
-        inventario.add(item);
-        return item;
+        item.setId(null);
+        item.setProveedorEntidad(resolverProveedor(item.getProveedor()));
+        return inventarioRepository.save(item);
     }
 
     @Override
+    @Transactional
     public Inventario actualizar(Integer id, Inventario actualizado) {
-        for (Inventario item : inventario) {
-            if (item.getId().equals(id)) {
-                item.setNombreInsumo(actualizado.getNombreInsumo());
-                item.setCantidad(actualizado.getCantidad());
-                item.setUnidad(actualizado.getUnidad());
-                item.setStockMinimo(actualizado.getStockMinimo());
-                item.setPrecioUnitario(actualizado.getPrecioUnitario());
-                item.setProveedor(actualizado.getProveedor());
-                item.setFechaActualizacion(LocalDateTime.now(LIMA_ZONE));
-                return item;
-            }
-        }
-        throw new ResourceNotFoundException("Inventario", id);
+        Inventario item = inventarioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventario", id));
+
+        item.setNombreInsumo(actualizado.getNombreInsumo());
+        item.setCantidad(actualizado.getCantidad());
+        item.setUnidad(actualizado.getUnidad());
+        item.setStockMinimo(actualizado.getStockMinimo());
+        item.setPrecioUnitario(actualizado.getPrecioUnitario());
+        item.setProveedorEntidad(resolverProveedor(actualizado.getProveedor()));
+        return inventarioRepository.save(item);
     }
 
     @Override
+    @Transactional
     public void eliminar(Integer id) {
-        boolean removed = inventario.removeIf(i -> i.getId().equals(id));
-        if (!removed) {
+        if (!inventarioRepository.existsById(id)) {
             throw new ResourceNotFoundException("Inventario", id);
         }
+        inventarioRepository.deleteById(id);
     }
 
     @Override
+    @Transactional
     public Inventario deducirStock(Integer id, int unidades) {
         if (unidades <= 0) {
             throw new BusinessException("Las unidades a deducir deben ser mayores que cero");
         }
-        for (Inventario item : inventario) {
-            if (item.getId().equals(id)) {
-                item.setCantidad(Math.max(item.getCantidad() - unidades, 0));
-                item.setFechaActualizacion(LocalDateTime.now(LIMA_ZONE));
-                return item;
-            }
-        }
-        throw new ResourceNotFoundException("Inventario", id);
+        Inventario item = inventarioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventario", id));
+        item.setCantidad(Math.max(item.getCantidad() - unidades, 0));
+        return inventarioRepository.save(item);
+    }
+
+    private Proveedor resolverProveedor(String nombre) {
+        return proveedorRepository.findByNombreIgnoreCase(nombre)
+                .orElseThrow(() -> new ResourceNotFoundException("Proveedor", nombre));
     }
 }

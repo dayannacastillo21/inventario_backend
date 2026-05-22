@@ -8,6 +8,10 @@ public interface InventarioService {
 
     List<Inventario> listar();
 
+    List<Inventario> listarConStockBajo();
+
+    Inventario obtenerPorId(Integer id);
+
     Inventario crear(Inventario item);
 
     Inventario actualizar(Integer id, Inventario actualizado);

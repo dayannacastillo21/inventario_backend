@@ -10,6 +10,10 @@ public interface ProductoService {
 
     List<Producto> porCategoria(String categoria);
 
+    List<Producto> listarActivos();
+
+    List<Producto> porPrecioMinimo(Double precioMinimo);
+
     Producto crear(Producto producto);
 
     Optional<Producto> obtenerPorId(Integer id);

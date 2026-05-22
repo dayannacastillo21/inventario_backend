@@ -13,9 +13,32 @@ import java.util.Optional;
 public class ProductoServiceImpl implements ProductoService {
     private final ProductoRepository productoRepository;
     public ProductoServiceImpl(ProductoRepository productoRepository) { this.productoRepository = productoRepository; }
+    @Override
+    @Transactional(readOnly = true)
     public List<Producto> listar() { return productoRepository.findAll(); }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Producto> porCategoria(String categoria) { return productoRepository.findByCategoriaIgnoreCase(categoria); }
-    @Transactional public Producto crear(Producto producto) { return productoRepository.save(producto); }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Producto> listarActivos() {
+        return productoRepository.findByActivoTrueOrderByNombreAsc();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Producto> porPrecioMinimo(Double precioMinimo) {
+        return productoRepository.buscarConPrecioMinimo(precioMinimo);
+    }
+
+    @Override
+    @Transactional
+    public Producto crear(Producto producto) { return productoRepository.save(producto); }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<Producto> obtenerPorId(Integer id) { return productoRepository.findById(id); }
     @Transactional public Producto actualizar(Integer id, Producto actualizado) {
         Producto p = productoRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Producto", id));

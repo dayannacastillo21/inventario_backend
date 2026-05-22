@@ -1,13 +1,13 @@
 package com.example.backend_cafedronel.controller;
 
 import com.example.backend_cafedronel.dto.PedidoCreateRequest;
+import com.example.backend_cafedronel.exception.ResourceNotFoundException;
 import com.example.backend_cafedronel.mapper.PedidoMapper;
 import com.example.backend_cafedronel.model.DetallePedido;
 import com.example.backend_cafedronel.model.Pedido;
 import com.example.backend_cafedronel.service.DetallePedidoService;
 import com.example.backend_cafedronel.service.PedidoService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -40,15 +41,15 @@ public class PedidoController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Pedido> obtenerPorId(@PathVariable Integer id) {
-        return pedidoService.obtenerPorId(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        Pedido pedido = pedidoService.obtenerPorId(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Pedido", id));
+        return ResponseEntity.ok(pedido);
     }
 
     @GetMapping("/{id}/detalles")
     public ResponseEntity<List<DetallePedido>> detalles(@PathVariable Integer id) {
         if (pedidoService.obtenerPorId(id).isEmpty()) {
-            return ResponseEntity.notFound().build();
+            throw new ResourceNotFoundException("Pedido", id);
         }
         return ResponseEntity.ok(detallePedidoService.obtenerPorPedido(id));
     }
@@ -56,7 +57,7 @@ public class PedidoController {
     @PostMapping
     public ResponseEntity<Pedido> crear(@Valid @RequestBody PedidoCreateRequest request) {
         Pedido creado = pedidoService.crear(PedidoMapper.toPedido(request));
-        return ResponseEntity.status(HttpStatus.CREATED).body(creado);
+        return ResponseEntity.created(URI.create("/api/pedidos/" + creado.getId())).body(creado);
     }
 
     @PutMapping("/{id}")

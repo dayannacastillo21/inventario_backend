@@ -19,6 +19,18 @@ class AuthApiTest {
     private MockMvc mockMvc;
 
     @Test
+    void loginValido_devuelveTokenYDatosUsuario() throws Exception {
+        String body = "{\"email\":\"admin@cafedronel.com\",\"password\":\"password\"}";
+        mockMvc.perform(post("/api/auth/sesiones")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("admin@cafedronel.com"))
+                .andExpect(jsonPath("$.role").value("ADMIN"))
+                .andExpect(jsonPath("$.token").exists());
+    }
+
+    @Test
     void loginInvalido_devuelve401() throws Exception {
         String body = "{\"email\":\"admin@cafedronel.com\",\"password\":\"incorrecta\"}";
         mockMvc.perform(post("/api/auth/sesiones")

@@ -5,181 +5,136 @@ import com.example.backend_cafedronel.exception.ResourceNotFoundException;
 import com.example.backend_cafedronel.model.DetallePedido;
 import com.example.backend_cafedronel.model.Pedido;
 import com.example.backend_cafedronel.model.Producto;
-import jakarta.annotation.PostConstruct;
+import com.example.backend_cafedronel.repository.PedidoRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Timestamp;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class PedidoServiceImpl implements PedidoService {
 
-    private static final ZoneId LIMA_ZONE = ZoneId.of("America/Lima");
-
     private final ProductoService productoService;
-    private final List<Pedido> pedidos = new ArrayList<>();
-    private int nextId = 1;
-    private int nextDetalleId = 1;
+    private final PedidoRepository pedidoRepository;
 
-    public PedidoServiceImpl(ProductoService productoService) {
+    public PedidoServiceImpl(ProductoService productoService, PedidoRepository pedidoRepository) {
         this.productoService = productoService;
-    }
-
-    @PostConstruct
-    void seedDemoPedido() {
-        Producto p1 = productoService.obtenerPorId(1).orElse(null);
-        Producto p2 = productoService.obtenerPorId(2).orElse(null);
-        if (p1 == null || p2 == null) {
-            return;
-        }
-        Pedido pedido = new Pedido();
-        pedido.setId(nextId++);
-        pedido.setCliente("Demo");
-        pedido.setEstado(Pedido.EstadoPedido.pendiente);
-
-        DetallePedido d1 = new DetallePedido();
-        d1.setId(nextDetalleId++);
-        d1.setCantidad(2);
-        d1.setPedidoId(pedido.getId());
-        d1.setProducto(copiaProductoParaDocumento(p1));
-        d1.setPrecio(p1.getPrecio());
-        d1.setSubtotal(2 * p1.getPrecio());
-
-        DetallePedido d2 = new DetallePedido();
-        d2.setId(nextDetalleId++);
-        d2.setCantidad(1);
-        d2.setPedidoId(pedido.getId());
-        d2.setProducto(copiaProductoParaDocumento(p2));
-        d2.setPrecio(p2.getPrecio());
-        d2.setSubtotal(1 * p2.getPrecio());
-
-        List<DetallePedido> detalles = new ArrayList<>();
-        detalles.add(d1);
-        detalles.add(d2);
-        pedido.setDetalles(detalles);
-        pedido.setTotal(d1.getSubtotal() + d2.getSubtotal());
-        pedidos.add(pedido);
+        this.pedidoRepository = pedidoRepository;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Pedido> listar() {
-        return new ArrayList<>(pedidos);
+        return pedidoRepository.findAllByOrderByIdAsc();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<Pedido> obtenerPorId(Integer id) {
-        return pedidos.stream().filter(p -> p.getId().equals(id)).findFirst();
+        return pedidoRepository.findById(id);
+    }
+
+    @Override
+    @Transactional
+    public Pedido crear(Pedido pedido) {
+        List<DetallePedido> detallesSolicitados = new ArrayList<>(pedido.getDetalles());
+
+        pedido.setId(null);
+        pedido.setEstado(Pedido.EstadoPedido.pendiente);
+        pedido.clearDetalles();
+        poblarDetallesYTotal(pedido, detallesSolicitados);
+
+        return pedidoRepository.save(pedido);
+    }
+
+    @Override
+    @Transactional
+    public Pedido actualizar(Integer id, Pedido pedidoActualizado) {
+        Pedido pedido = pedidoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Pedido", id));
+
+        List<DetallePedido> detallesSolicitados = pedidoActualizado.getDetalles();
+        pedido.setCliente(pedidoActualizado.getCliente());
+        pedido.clearDetalles();
+        poblarDetallesYTotal(pedido, detallesSolicitados);
+
+        return pedidoRepository.save(pedido);
+    }
+
+    @Override
+    @Transactional
+    public Pedido actualizarEstado(Integer id, String estado) {
+        Pedido pedido = pedidoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Pedido", id));
+
+        if (estado == null || estado.isBlank()) {
+            throw new BusinessException("El estado es obligatorio");
+        }
+
+        try {
+            pedido.setEstado(Pedido.EstadoPedido.valueOf(estado.trim().toLowerCase()));
+        } catch (IllegalArgumentException ex) {
+            throw new BusinessException("Estado no valido: " + estado);
+        }
+
+        return pedidoRepository.save(pedido);
+    }
+
+    @Override
+    @Transactional
+    public void eliminar(Integer id) {
+        if (!pedidoRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Pedido", id);
+        }
+        pedidoRepository.deleteById(id);
+    }
+
+    private void poblarDetallesYTotal(Pedido pedido, List<DetallePedido> detallesSolicitados) {
+        if (detallesSolicitados == null || detallesSolicitados.isEmpty()) {
+            throw new BusinessException("El pedido debe incluir al menos un detalle");
+        }
+
+        Set<Integer> productosUsados = new HashSet<>();
+        double total = 0;
+
+        for (DetallePedido solicitado : detallesSolicitados) {
+            Integer productoId = extraerProductoId(solicitado);
+            if (!productosUsados.add(productoId)) {
+                throw new BusinessException("El producto " + productoId + " esta duplicado en el pedido");
+            }
+            if (solicitado.getCantidad() == null || solicitado.getCantidad() <= 0) {
+                throw new BusinessException("La cantidad debe ser mayor que cero");
+            }
+
+            Producto producto = resolverProducto(productoId);
+            double subtotal = solicitado.getCantidad() * producto.getPrecio();
+
+            DetallePedido detalle = new DetallePedido();
+            detalle.setCantidad(solicitado.getCantidad());
+            detalle.setProducto(producto);
+            detalle.setPrecio(producto.getPrecio());
+            detalle.setSubtotal(subtotal);
+            pedido.addDetalle(detalle);
+
+            total += subtotal;
+        }
+
+        pedido.setTotal(total);
+    }
+
+    private Integer extraerProductoId(DetallePedido detalle) {
+        if (detalle == null || detalle.getProducto() == null || detalle.getProducto().getId() == null) {
+            throw new BusinessException("Cada detalle debe referenciar un producto por id");
+        }
+        return detalle.getProducto().getId();
     }
 
     private Producto resolverProducto(Integer id) {
         return productoService.obtenerPorId(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Producto", id));
-    }
-
-    /**
-     * Copia datos del catálogo para el documento (pedido) sin mutar el producto en memoria.
-     * La fechaCreacion refleja el momento en que se arma la línea del pedido.
-     */
-    private static Producto copiaProductoParaDocumento(Producto origen) {
-        Producto copia = new Producto();
-        copia.setId(origen.getId());
-        copia.setNombre(origen.getNombre());
-        copia.setPrecio(origen.getPrecio());
-        copia.setCategoria(origen.getCategoria());
-        copia.setDescripcion(origen.getDescripcion());
-        copia.setFechaCreacion(Timestamp.from(ZonedDateTime.now(LIMA_ZONE).toInstant()));
-        return copia;
-    }
-
-    @Override
-    public Pedido crear(Pedido pedido) {
-        if (pedido.getDetalles() == null || pedido.getDetalles().isEmpty()) {
-            throw new BusinessException("El pedido debe incluir al menos un detalle");
-        }
-
-        pedido.setId(nextId++);
-        pedido.setEstado(Pedido.EstadoPedido.pendiente);
-
-        double total = 0;
-        for (DetallePedido d : pedido.getDetalles()) {
-            d.setId(nextDetalleId++);
-            d.setPedidoId(pedido.getId());
-
-            if (d.getProducto() == null || d.getProducto().getId() == null) {
-                throw new BusinessException("Cada detalle debe referenciar un producto por id");
-            }
-            Producto producto = resolverProducto(d.getProducto().getId());
-            d.setProducto(copiaProductoParaDocumento(producto));
-            d.setPrecio(producto.getPrecio());
-            double subtotal = d.getCantidad() * producto.getPrecio();
-            d.setSubtotal(subtotal);
-            total += subtotal;
-        }
-        pedido.setTotal(total);
-        pedidos.add(pedido);
-        return pedido;
-    }
-
-    @Override
-    public Pedido actualizar(Integer id, Pedido pedidoActualizado) {
-        Pedido pedido = pedidos.stream()
-                .filter(p -> p.getId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Pedido", id));
-
-        pedido.setCliente(pedidoActualizado.getCliente());
-        pedido.setDetalles(pedidoActualizado.getDetalles());
-
-        if (pedido.getDetalles() == null || pedido.getDetalles().isEmpty()) {
-            throw new BusinessException("El pedido debe incluir al menos un detalle");
-        }
-
-        double total = 0;
-        for (DetallePedido d : pedido.getDetalles()) {
-            d.setId(nextDetalleId++);
-            d.setPedidoId(pedido.getId());
-            if (d.getProducto() == null || d.getProducto().getId() == null) {
-                throw new BusinessException("Cada detalle debe referenciar un producto por id");
-            }
-            Producto producto = resolverProducto(d.getProducto().getId());
-            d.setProducto(copiaProductoParaDocumento(producto));
-            d.setPrecio(producto.getPrecio());
-            double subtotal = d.getCantidad() * producto.getPrecio();
-            d.setSubtotal(subtotal);
-            total += subtotal;
-        }
-        pedido.setTotal(total);
-        return pedido;
-    }
-
-    @Override
-    public Pedido actualizarEstado(Integer id, String estado) {
-        Pedido pedido = pedidos.stream()
-                .filter(p -> p.getId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Pedido", id));
-
-        if (estado == null) {
-            throw new BusinessException("El estado es obligatorio");
-        }
-        switch (estado.toLowerCase()) {
-            case "en_proceso" -> pedido.setEstado(Pedido.EstadoPedido.en_proceso);
-            case "completado" -> pedido.setEstado(Pedido.EstadoPedido.completado);
-            case "cancelado" -> pedido.setEstado(Pedido.EstadoPedido.cancelado);
-            default -> throw new BusinessException("Estado no válido: " + estado);
-        }
-        return pedido;
-    }
-
-    @Override
-    public void eliminar(Integer id) {
-        boolean removed = pedidos.removeIf(p -> p.getId().equals(id));
-        if (!removed) {
-            throw new ResourceNotFoundException("Pedido", id);
-        }
     }
 }
