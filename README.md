@@ -2,10 +2,7 @@
 
 API REST desarrollada con Spring Boot para gestionar productos, usuarios, autenticacion, proveedores, inventario, pedidos y ventas de Cafedronel.
 
-**Repositorio:** https://github.com/dayannacastillo21/inventario_backend
-
-Este repositorio corresponde al **Avance de Proyecto Final 02 (APF02)**. La documentacion academica detallada (JPA, CRUD, consultas, transacciones, seguridad, JWT y evidencias) esta en **[AVANCE_PROYECTO_FINAL_02.md](AVANCE_PROYECTO_FINAL_02.md)**.
-
+Este repositorio corresponde al **Avance de Proyecto Final 02 (APF02)**. La documentacion academica detallada (JPA, CRUD, consultas, transacciones, seguridad, JWT y evidencias).
 El avance anterior (APF1) cubria estructura Spring Boot, endpoints REST, capas, pruebas y documentacion base; APF02 profundiza en persistencia JPA, CRUD completo, consultas transaccionales, Spring Security y JWT.
 
 ## Documentacion del repositorio
