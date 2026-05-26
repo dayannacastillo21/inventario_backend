@@ -327,17 +327,6 @@ Capturas pendientes recomendadas:
 10. Estructura del proyecto en el IDE.
 11. Migraciones Flyway en `src/main/resources/db/migration`.
 
-## Cumplimiento de rubrica APF02
-
-| Criterio | Peso | Estado | Evidencia |
-|----------|------|--------|-----------|
-| Persistencia JPA/Hibernate | 20% | Excelente | 7 entidades, relaciones `@ManyToOne`/`@OneToMany`, Flyway, `validate`, campo `activo` en productos |
-| CRUD completo | 25% | Excelente | CRUD en todos los modulos con `GET /{id}`, validaciones DTO y `GlobalExceptionHandler` |
-| Consultas y transacciones | 15% | Excelente | JPQL precio minimo, stock bajo, ventas por usuario/estado; `@Transactional` en servicios |
-| Spring Security | 20% | Excelente | BCrypt, roles, DELETE solo ADMIN, 401/403 JSON, filtro JWT |
-| JWT y documentacion | 20% | Excelente | Login, Bearer, expiracion; `AVANCE_PROYECTO_FINAL_02.md`, Postman, pruebas integracion JWT |
-
-Coleccion Postman: `docs/postman/Cafedronel-APF02.postman_collection.json`
 
 ## Despliegue
 
