@@ -103,6 +103,7 @@ Copias manuales (mismo contenido): `database/scripts/V0__bootstrap.sql` … `V7_
 |--------|-----|
 | [limpiar_productos_duplicados_y_catalogo.sql](scripts/limpiar_productos_duplicados_y_catalogo.sql) | Quita duplicados por `nombre`, inserta menú faltante y renumera IDs 1…N |
 | [reordenar_ids_productos.sql](scripts/reordenar_ids_productos.sql) | Solo renumera `productos.id` sin huecos y actualiza FK |
+| [eliminar_producto_por_id.sql](scripts/eliminar_producto_por_id.sql) | Borra un producto por id y sus filas en `detalle_pedido` y `ventas` |
 
 Detalle de ejecución: [database/scripts/README.md](scripts/README.md).
 

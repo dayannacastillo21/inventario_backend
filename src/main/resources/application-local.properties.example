@@ -1,0 +1,9 @@
+# Copia este archivo como application-local.properties (está en .gitignore).
+# Activa el perfil: spring.profiles.active=local
+# O en PowerShell antes de mvn spring-boot:run:
+#   $env:SPRING_PROFILES_ACTIVE="local"
+
+# URL externa Render (desde tu PC), con ?sslmode=require
+spring.datasource.url=jdbc:postgresql://HOST.frankfurt-postgres.render.com:5432/inventario_backenddatabase?sslmode=require
+spring.datasource.username=USUARIO_RENDER
+spring.datasource.password=PASSWORD_RENDER

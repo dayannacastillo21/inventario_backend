@@ -36,6 +36,9 @@ build/
 .env
 .env.*
 !.env.example
+.env
+.env.local
+application-local.properties
 
 ### Archivos temporales Office ###
 ~$*

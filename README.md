@@ -327,9 +327,13 @@ Capturas pendientes recomendadas:
 
 ## Despliegue
 
-El `Dockerfile` construye el JAR con Maven y ejecuta la aplicacion con Java 17. En plataformas como Render, configurar al menos:
+El `Dockerfile` construye el JAR con Maven y ejecuta la aplicacion con Java 17.
 
-- `DB_URL`
+**Render:** no hace falta subir un `.env`. Configura las variables en el panel **Environment** del Web Service (Render las inyecta igual que un `.env`). Guia paso a paso: **[docs/DESPLIEGUE_RENDER.md](docs/DESPLIEGUE_RENDER.md)**. Plantilla de nombres: [.env.example](.env.example). Blueprint opcional: [render.yaml](render.yaml).
+
+Variables minimas en Render:
+
+- `DB_URL` (formato `jdbc:postgresql://host:puerto/bd`)
 - `DB_USER`
 - `DB_PASSWORD`
 - `JWT_SECRET`
