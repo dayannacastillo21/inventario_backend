@@ -92,9 +92,16 @@ En el Web Service → **Environment** → **Add Environment Variable**:
 
 | Variable | Obligatoria | Ejemplo / notas |
 |----------|-------------|-----------------|
-| `DB_URL` | Sí | `jdbc:postgresql://HOST:5432/NOMBRE_BD` (Internal URL en formato JDBC) |
-| `DB_USER` | Sí | Usuario de la BD Render |
+| `DB_HOST` | Sí | Host **interno** ej. `dpg-d8bobn3eo5us73dl9e3g-a` (no el usuario) |
+| `DB_PORT` | No | `5432` |
+| `DB_NAME` | Sí | `inventario_backenddatabase` |
+| `DB_USER` | Sí | `inventario_backenddatabase_user` |
 | `DB_PASSWORD` | Sí | Password de la BD Render |
+| `DB_SSLMODE` | No | `require` (en Render interno suele ir bien) |
+
+**Error típico:** poner `DB_URL=inventario_backenddatabase_user` → el deploy falla con  
+`Driver claims to not accept jdbcUrl, inventario_backenddatabase_user`.  
+**Solución:** borra esa `DB_URL` incorrecta o usa JDBC completo que empiece con `jdbc:postgresql://`.
 | `JWT_SECRET` | Sí | Mínimo 32 caracteres, aleatorio y distinto al de desarrollo |
 | `CORS_ALLOWED_ORIGINS` | Recomendado | URL de tu frontend, ej. `https://mi-app.onrender.com` |
 | `PORT` | No | Render la define solo (no hace falta ponerla) |
